@@ -2,9 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
+
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
-	"net/http"
 )
 
 // dbConn represents the database connection
@@ -39,6 +41,23 @@ func CreateGameHandler(w http.ResponseWriter, r *http.Request) {
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(savedGame)
+}
+
+func ListGamesHandler(w http.ResponseWriter, r *http.Request) {
+	print("ListGamesHandler")
+	// Fetch all active games from the database
+	games, err := dbConn.ListGames()
+	if err != nil {
+		http.Error(w, "Failed to list games", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(games)
+}
+
+func TestRouteHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Test endpoint")	
 }
 
 

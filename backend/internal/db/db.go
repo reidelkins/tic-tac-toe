@@ -1,11 +1,12 @@
 package db
 
 import (
-	"database/sql"	
-	_ "github.com/lib/pq"
-    "encoding/json"
+	"database/sql"
+	"encoding/json"
 
-    "github.com/reidelkins/kube-tic-tac-toe/internal/game"
+	_ "github.com/lib/pq"
+
+	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
 )
 
 type DB struct {
@@ -83,4 +84,30 @@ func (db *DB) UpdateGame(g *game.Game) error {
         g.ID,
     )
     return err
+}
+
+func (db *DB) ListGames() ([]game.Game, error) {
+    rows, err := db.Query(`SELECT id, player1_id, player2_id, state, over FROM games`)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var games []game.Game
+    for rows.Next() {
+        var g game.Game
+        var serializedState string
+        if err := rows.Scan(&g.ID, &g.Player1ID, &g.Player2ID, &serializedState, &g.Over); err != nil {
+            return nil, err
+        }
+
+        // Deserialize the state into the Game struct
+        if err := json.Unmarshal([]byte(serializedState), &g); err != nil {
+            return nil, err
+        }
+
+        games = append(games, g)
+    }
+
+    return games, nil
 }

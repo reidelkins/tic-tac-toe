@@ -16,7 +16,8 @@ func main() {
 	// handlers.Handler(router)
 
     // router.Post("/create-game", createGameHandler)
-    // router.Get("/list-games", listGamesHandler)
+    router.Get("/list-active-games", api.ListGamesHandler)
+	router.Get("/test-route", api.TestRouteHandler)
     // router.Post("/join-game/{gameId}", joinGameHandler)
     // router.Post("/play-move", playMoveHandler)
     router.Post("/create-game", api.CreateGameHandler)

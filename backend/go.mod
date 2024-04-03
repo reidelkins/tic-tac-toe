@@ -1,4 +1,4 @@
-module reidelkins/kube-tic-tac-toe
+module github.com/reidelkins/kube-tic-tac-toe
 
 go 1.22.1
 

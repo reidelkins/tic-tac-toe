@@ -7,8 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"tic-tac-toe/backend/internal/db"
-	"tic-tac-toe/backend/internal/game"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
 )
 
 var connections = make(map[int64][]*websocket.Conn)

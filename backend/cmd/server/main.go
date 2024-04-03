@@ -4,7 +4,7 @@ import (
 	// "fmt"
 	"net/http"
 
-	"tic-tac-toe/backend/internal/api"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/api"
 
 	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"

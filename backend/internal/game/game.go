@@ -1,6 +1,9 @@
 package game
 
-import "time"
+import (
+    "time"
+    "encoding/json"
+)
 
 type Game struct {
     ID        int64
@@ -12,6 +15,12 @@ type Game struct {
     Over      bool
     CreatedAt time.Time
     UpdatedAt time.Time
+}
+
+type Move struct {
+    PlayerID int64 `json:"playerId"`
+    X        int   `json:"x"`
+    Y        int   `json:"y"`
 }
 
 func NewGame(player1ID int64) *Game {
@@ -96,4 +105,12 @@ func (g *Game) checkWinner() {
         g.Winner = "Draw"
         g.Over = true
     }
+}
+
+func (g *Game) Serialize() (string, error) {
+    data, err := json.Marshal(g)
+    if err != nil {
+        return "", err
+    }
+    return string(data), nil
 }

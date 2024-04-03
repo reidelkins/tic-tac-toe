@@ -2,35 +2,45 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
 	"net/http"
-	"tic-tac-toe/backend/internal/db"
-	"tic-tac-toe/backend/internal/game"
 )
 
 // dbConn represents the database connection
 var dbConn *db.DB
 
 func CreateGameHandler(w http.ResponseWriter, r *http.Request) {
-	// Initialize a new game
-	newGame := game.NewGame()
+    // Example of extracting player ID from the request, adjust as necessary
+    var playerInfo struct {
+        Player1ID int64 `json:"player1Id"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {
+        http.Error(w, "Invalid request", http.StatusBadRequest)
+        return
+    }
 
-	// Save the new game to the database
-	gameID, err := dbConn.CreateGame(newGame)
-	if err != nil {
-		http.Error(w, "Failed to create game", http.StatusInternalServerError)
-		return
-	}
+    // Initialize a new game with the player ID
+    newGame := game.NewGame(playerInfo.Player1ID)
 
-	// Fetch the newly created game from the database
-	savedGame, err := dbConn.GetGame(gameID)
-	if err != nil {
-		http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
-		return
-	}
+    // Save the new game to the database
+    gameID, err := dbConn.CreateGame(newGame)
+    if err != nil {
+        http.Error(w, "Failed to create game", http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(savedGame)
+    // Fetch the newly created game from the database
+    savedGame, err := dbConn.GetGame(gameID)
+    if err != nil {
+        http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(savedGame)
 }
+
 
 // func PlayMoveHandler(w http.ResponseWriter, r *http.Request) {
 // 	// Extracting a game ID from the URL path

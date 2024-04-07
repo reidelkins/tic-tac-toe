@@ -1,14 +1,14 @@
 package game
 
 import (
-    "time"
-    "encoding/json"
+	"encoding/json"
+	"time"
 )
 
 type Game struct {
     ID        int64
-    Player1ID int64
-    Player2ID int64
+    Player1ID int64    
+    Player2ID int64    
     Board     [3][3]string
     CurrentPlayer string
     Winner    string

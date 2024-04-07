@@ -1,0 +1,20 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/server"
+  bin = "tmp/main"  
+
+[log]
+  time = true
+
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"
+  runner = "magenta"
+
+[watch]
+  include = ["./cmd/", "./internal/", "./websocket/"]
+  exclude = ["tmp"]

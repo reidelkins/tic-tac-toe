@@ -1,47 +1,65 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/reidelkins/kube-tic-tac-toe/internal/api"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
+
+// dbConn represents the database connection
+var dbConn *db.DB
 
 func main() {
 	log.SetReportCaller(true)
     var router *chi.Mux = chi.NewRouter()
 	// handlers.Handler(router)
 
-    // router.Post("/create-game", createGameHandler)
-    router.Get("/list-active-games", api.ListGamesHandler)
-	router.Get("/test-route", api.TestRouteHandler)
+	var err error
+
+	// Load .env file
+    err = godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+
+	dbHost := os.Getenv("DB_HOST")
+    dbPort := os.Getenv("DB_PORT")
+    dbName := os.Getenv("DB_NAME")
+    dbUser := os.Getenv("DB_USER")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbSslmode := os.Getenv("DB_SSLMODE")
+
+	dsn := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s",
+        dbHost, dbPort, dbName, dbUser, dbPassword, dbSslmode)
+
+	
+	
+    dbConn, err = db.NewDB(dsn)
+	
+    if err != nil {
+        log.Fatalf("Could not connect to database: %v", err)
+    }
+
+	handler := &api.Handler{DBConn: dbConn}
+    
+	router.Post("/create-game", handler.CreateGameHandler)
+    router.Get("/list-active-games", handler.ListGamesHandler)
+	
     // router.Post("/join-game/{gameId}", joinGameHandler)
-    // router.Post("/play-move", playMoveHandler)
-    router.Post("/create-game", api.CreateGameHandler)
-    // router.Post("/play-move", api.PlayMoveHandler)
+    
+	
+    // router.Post("/play-move", handler.PlayMoveHandler)
 
     log.Println("Starting server on :8080")
-    err := http.ListenAndServe(":8080", router)
+    err = http.ListenAndServe(":8080", router)
 	if err != nil {
 		log.Error(err)
 	}
 }
-
-// func createGameHandler(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprint(w, "Create game endpoint")
-// }
-
-// func listGamesHandler(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprint(w, "List games endpoint")
-// }
-
-// func joinGameHandler(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprint(w, "Join game endpoint")
-// }
-
-// func playMoveHandler(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprint(w, "Play move endpoint")
-// }

@@ -9,44 +9,59 @@ import (
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
 )
 
-// dbConn represents the database connection
-var dbConn *db.DB
+type Handler struct {
+    DBConn *db.DB
+}
 
-func CreateGameHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
     // Example of extracting player ID from the request, adjust as necessary
     var playerInfo struct {
-        Player1ID int64 `json:"player1Id"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {
+        Player1Username string `json:"player1Username"`
+    }	
+    if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {		
         http.Error(w, "Invalid request", http.StatusBadRequest)
         return
     }
 
-    // Initialize a new game with the player ID
-    newGame := game.NewGame(playerInfo.Player1ID)
+    	
+    // Check if the database connection is nil
+	if h.DBConn == nil {
+		fmt.Println("DB Conn is nil")
+		return
+	}	
 
-    // Save the new game to the database
-    gameID, err := dbConn.CreateGame(newGame)
-    if err != nil {
+	playerID, err := h.DBConn.CreateGetPlayer(playerInfo.Player1Username)
+	if err != nil {
+		http.Error(w, "Failed to get or create player", http.StatusInternalServerError)
+		return
+	}
+
+	// Initialize a new game with the player ID
+    newGame := game.NewGame(playerID)	
+	
+
+    gameID, err := h.DBConn.CreateGame(newGame)
+	
+    if err != nil {		
         http.Error(w, "Failed to create game", http.StatusInternalServerError)
         return
     }
-
+	
     // Fetch the newly created game from the database
-    savedGame, err := dbConn.GetGame(gameID)
+    savedGame, err := h.DBConn.GetGame(gameID)
     if err != nil {
         http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
         return
     }
-
+	
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(savedGame)
 }
 
-func ListGamesHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {
 	print("ListGamesHandler")
 	// Fetch all active games from the database
-	games, err := dbConn.ListGames()
+	games, err := h.DBConn.ListGames()
 	if err != nil {
 		http.Error(w, "Failed to list games", http.StatusInternalServerError)
 		return
@@ -54,10 +69,6 @@ func ListGamesHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(games)
-}
-
-func TestRouteHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Test endpoint")	
 }
 
 

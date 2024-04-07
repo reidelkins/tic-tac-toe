@@ -3,7 +3,6 @@
   <div *ngFor="let game of games" class="game">
     <div class="game-info">
       <p>Players: {{ game.players.join(', ') }}</p>
-      <p>Viewers: {{ game.viewers }}</p>
     </div>
     <div class="game-actions">
       <button (click)="viewGame(game.id)">View</button>

@@ -1,12 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import {NgFor} from '@angular/common';
 import { Router } from '@angular/router'; // Import Router
-
-interface Game {
-  id: string;
-  players: string[];
-  viewers: number;
-}
+import { Game } from '../game.model';
+import { GameService } from '../core/services/game.service';
 
 @Component({
   selector: 'app-game-list',
@@ -18,15 +14,27 @@ interface Game {
 export class GameListComponent implements OnInit {
   games: Game[] = []; // This will be fetched from the backend
 
-  constructor(private router: Router) {} // Inject Router here
+  
+  constructor(
+    private gameService: GameService, 
+    private router: Router) {}
 
   ngOnInit(): void {
-    // This would be replaced by a service call to fetch active games
-    this.games = [
-      { id: '1', players: ['Alice'], viewers: 5 },
-      { id: '2', players: ['Bob', 'Charlie'], viewers: 3 }
-      // more games...
-    ];
+    // This would be replaced by a service call to fetch active games    
+    this.gameService.listActiveGames().subscribe({
+      next: (games) => {        
+        if (games && games.length > 0) {
+          this.games = games;          
+        } else {
+          // Handle the case where there are no games
+          this.games = [];          
+        }
+      },
+      error: (err) => {        
+        console.error('Error fetching games:', err);
+      },
+    });
+    
   }
 
   viewGame(gameId: string) {

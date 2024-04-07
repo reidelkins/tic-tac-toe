@@ -58,17 +58,19 @@ func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(savedGame)
 }
 
-func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {
-	print("ListGamesHandler")
+func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {	
 	// Fetch all active games from the database
 	games, err := h.DBConn.ListGames()
 	if err != nil {
 		http.Error(w, "Failed to list games", http.StatusInternalServerError)
 		return
-	}
+	}	
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(games)
+	if err := json.NewEncoder(w).Encode(games); err != nil {
+        http.Error(w, "Error encoding games", http.StatusInternalServerError)
+        return
+    }
 }
 
 

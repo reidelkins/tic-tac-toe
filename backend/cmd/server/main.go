@@ -9,6 +9,7 @@ import (
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
@@ -48,6 +49,17 @@ func main() {
     }
 
 	handler := &api.Handler{DBConn: dbConn}
+
+    // Setting up CORS
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://127.0.0.1:4200"}, // or your frontend host
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+	router.Use(cors.Handler)
     
 	router.Post("/create-game", handler.CreateGameHandler)
     router.Get("/list-active-games", handler.ListGamesHandler)

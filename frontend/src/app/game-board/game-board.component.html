@@ -1,1 +1,19 @@
-<p>game-board works!</p>
+<div class="game-board">
+  <div class="header">
+    <div class="players-info">
+      <p>{{ players[0] }} vs {{ players[1] || 'waiting for player 2 to join' }}</p>
+    </div>
+    <button (click)="shareGame()">Share/Invite</button>
+    <p>Viewers: {{ viewersCount }}</p>
+  </div>
+
+  <div class="board">
+    <div *ngFor="let row of [0, 1, 2]; let i = index" class="row">
+      <div *ngFor="let col of [0, 1, 2]; let j = index" 
+           class="cell" 
+           (click)="makeMove(i, j)">
+        {{ getCellSymbol(i, j) }}
+      </div>
+    </div>
+  </div>
+</div>

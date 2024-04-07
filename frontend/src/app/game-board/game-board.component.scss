@@ -1,0 +1,38 @@
+body {
+  min-height: calc(100vh + 100px);
+  overflow-y: auto; /* Ensures that the body can scroll */
+  margin: 0; /* Remove default margin */
+}
+
+.game-board {
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .players-info {
+      p {
+        margin: 0;
+      }
+    }
+  }
+
+  .board {
+    display: grid;
+    grid-template-rows: repeat(3, 1fr); /* Creates 3 rows with equal height */
+    grid-template-columns: repeat(3, 1fr); /* Creates 3 columns with equal width */
+    gap: 1px; /* Adds space between rows and columns */
+    max-width: 1500px; /* Sets the maximum width of the board */
+    margin: auto; /* Centers the board horizontally */
+    }
+
+    .cell {
+    display: flex;
+    justify-content: center; /* Centers the content horizontally */
+    align-items: center; /* Centers the content vertically */
+    border: 1px solid black; /* Adds a border around each cell */
+    font-size: 2em; /* Enlarges the cell content */
+    aspect-ratio: 1; /* Ensures each cell is a square */
+    }
+}

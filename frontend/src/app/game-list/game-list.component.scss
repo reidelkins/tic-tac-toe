@@ -1,0 +1,23 @@
+.game-list {
+  .game {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+
+    .game-info {
+      p {
+        margin: 0;
+      }
+    }
+
+    .game-actions {
+      button {
+        margin-left: 10px;
+      }
+    }
+  }
+}

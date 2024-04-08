@@ -62,6 +62,7 @@ func main() {
 	router.Use(cors.Handler)
     
 	router.Post("/create-game", handler.CreateGameHandler)
+	router.Post("/join-game", handler.JoinGameHandler)
     router.Get("/list-active-games", handler.ListGamesHandler)
 	
     // router.Post("/join-game/{gameId}", joinGameHandler)

@@ -66,6 +66,61 @@ func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func (h *Handler) JoinGameHandler(w http.ResponseWriter, r *http.Request) {
+	// Extracting player ID from the request, adjust as necessary
+	var playerInfo struct {
+		Player2Username string `json:"player2Username"`
+		GameID          int64  `json:"gameId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the database connection is nil
+	if h.DBConn == nil {
+		fmt.Println("DB Conn is nil")
+		return
+	}
+
+	playerID, err := h.DBConn.CreateGetPlayer(playerInfo.Player2Username)
+	if err != nil {
+		http.Error(w, "Failed to get or create player", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch the game from the database
+	currentGame, err := h.DBConn.GetGame(playerInfo.GameID)
+	if err != nil {
+		http.Error(w, "Game not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if the game already has two players
+	if currentGame.Player2ID != 0 {
+		http.Error(w, "Game already has two players", http.StatusBadRequest)
+		return
+	}
+	
+	// Check if new player is trying to join their own game
+	if currentGame.Player1ID == playerID {
+		http.Error(w, "Player cannot join their own game", http.StatusBadRequest)
+		return
+	}
+
+	// Assign the player ID to the game
+	currentGame.Player2ID = playerID
+
+	// Update the game in the database
+	if err := h.DBConn.UpdateGame(currentGame); err != nil {
+		http.Error(w, "Failed to update game", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(currentGame)
+}
+
 
 // func PlayMoveHandler(w http.ResponseWriter, r *http.Request) {
 // 	// Extracting a game ID from the URL path

@@ -2,11 +2,11 @@
   <h2>Active Games</h2>
   <div *ngFor="let game of games" class="game">
     <div class="game-info">
-      <p>Players: {{ game.players.join(', ') }}</p>
+      <p>Players: {{ game.Player1Username }}<span *ngIf="game.Player2ID !== 0">, {{ game.Player2Username }}</span></p>
     </div>
     <div class="game-actions">
       <button (click)="viewGame(game.id)">View</button>
-      <button (click)="joinGame(game.id)" [disabled]="game.players.length >= 2">Join</button>
+      <button (click)="joinGame(game.id)" [disabled]="game.Player2ID != 0">Join</button>
     </div>
   </div>
 </div>

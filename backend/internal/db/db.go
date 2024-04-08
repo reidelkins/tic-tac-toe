@@ -136,7 +136,22 @@ func (db *DB) UpdateGame(g *game.Game) error {
 }
 
 func (db *DB) ListGames() ([]game.Game, error) {
-    rows, err := db.Query(`SELECT id, player1_id, player2_id, state, over FROM games`)    
+    rows, err := db.Query(`
+        SELECT 
+            g.id, 
+            g.player1_id, 
+            u1.username AS player1_username, 
+            g.player2_id, 
+            u2.username AS player2_username, 
+            g.state, 
+            g.over
+        FROM 
+            games g
+        LEFT JOIN 
+            users u1 ON g.player1_id = u1.id
+        LEFT JOIN 
+            users u2 ON g.player2_id = u2.id
+    `)    
     if err != nil {
         return nil, err
     }
@@ -145,11 +160,12 @@ func (db *DB) ListGames() ([]game.Game, error) {
     
     var games []game.Game    
     
-    for rows.Next() {
-        var player2ID sql.NullInt64                
+    for rows.Next() {         
         var g game.Game
         var serializedState string
-        if err := rows.Scan(&g.ID, &g.Player1ID, &player2ID, &serializedState, &g.Over); err != nil {            
+        var player1Username, player2Username sql.NullString  // Use NullString to handle potential NULL values
+        var player2ID sql.NullInt64
+        if err := rows.Scan(&g.ID, &g.Player1ID, &player1Username, &player2ID, &player2Username, &serializedState, &g.Over); err != nil {            
             return nil, err
         }
         
@@ -158,6 +174,10 @@ func (db *DB) ListGames() ([]game.Game, error) {
         } else {
             g.Player2ID = 0  // Or however you want to handle a NULL player2_id
         }
+
+        // Check if the username is valid (not NULL) before assigning
+        g.Player1Username = player1Username.String  // The String method of NullString returns the string value
+        g.Player2Username = player2Username.String
 
         // Deserialize the state into the Game struct
         if err := json.Unmarshal([]byte(serializedState), &g); err != nil {

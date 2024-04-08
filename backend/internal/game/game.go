@@ -7,8 +7,10 @@ import (
 
 type Game struct {
     ID        int64
-    Player1ID int64    
-    Player2ID int64    
+    Player1ID int64
+    Player1Username string    
+    Player2ID int64
+    Player2Username string
     Board     [3][3]string
     CurrentPlayer string
     Winner    string

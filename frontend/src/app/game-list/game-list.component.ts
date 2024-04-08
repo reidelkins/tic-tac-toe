@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {NgFor} from '@angular/common';
+import {NgFor, NgIf} from '@angular/common';
 import { Router } from '@angular/router'; // Import Router
 import { Game } from '../game.model';
 import { GameService } from '../core/services/game.service';
@@ -8,7 +8,7 @@ import { GameService } from '../core/services/game.service';
   selector: 'app-game-list',
   templateUrl: './game-list.component.html',
   styleUrls: ['./game-list.component.scss'],
-  imports: [NgFor], // Add this line to import NgFor
+  imports: [NgFor, NgIf], // Add this line to import NgFor
   standalone: true // Add this line to make it a standalone component
 })
 export class GameListComponent implements OnInit {
@@ -24,7 +24,7 @@ export class GameListComponent implements OnInit {
     this.gameService.listActiveGames().subscribe({
       next: (games) => {        
         if (games && games.length > 0) {
-          this.games = games;          
+          this.games = games;             
         } else {
           // Handle the case where there are no games
           this.games = [];          

@@ -46,16 +46,9 @@ func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Failed to create game", http.StatusInternalServerError)
         return
     }
-	
-    // Fetch the newly created game from the database
-    savedGame, err := h.DBConn.GetGame(gameID)
-    if err != nil {
-        http.Error(w, "Failed to retrieve game", http.StatusInternalServerError)
-        return
-    }
-	
+	    
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(savedGame)
+    json.NewEncoder(w).Encode(gameID)
 }
 
 func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {	

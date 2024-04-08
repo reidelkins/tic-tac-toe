@@ -165,8 +165,7 @@ func (db *DB) ListGames() ([]game.Game, error) {
         }
 
         games = append(games, g)
-    }
-    fmt.Println("Games: ", games)
+    }    
 
     return games, nil
 }

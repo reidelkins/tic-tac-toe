@@ -3,6 +3,7 @@ import { Router } from '@angular/router'; // Import Router
 import { FormsModule } from '@angular/forms';
 import { LeaderboardComponent } from '../leaderboard/leaderboard.component';
 import { GameListComponent } from '../game-list/game-list.component';
+import { GameService } from '../core/services/game.service';
 
 @Component({
   selector: 'app-home',
@@ -18,7 +19,9 @@ import { GameListComponent } from '../game-list/game-list.component';
 export class HomeComponent {
   username: string = '';
 
-  constructor(private router: Router) {} // Inject Router here
+  constructor(
+    private gameService: GameService, 
+    private router: Router) {} // Inject Router here
 
   createGame() {
     if (!this.username) {
@@ -26,9 +29,15 @@ export class HomeComponent {
       return;
     }
     console.log('Creating game for', this.username);
-    // Logic to create a game, likely involving calling a service method
-
-    // Navigate to the game route with a static gameID for now
-    this.router.navigate(['/game', '1']);
+    this.gameService.createGame(this.username).subscribe({
+      next: (gameId) => {
+        console.log('Game created:', gameId);
+        this.router.navigate(['/game', gameId]);
+      },
+      error: (err) => {
+        console.error('Error creating game:', err);
+      },
+    });    
+        
   }
 }

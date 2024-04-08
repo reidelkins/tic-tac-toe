@@ -14,8 +14,8 @@ export class GameService {
     return this.http.get<Game[]>(`${environment.backendUrl}/list-active-games`);
   }
 
-  createGame(username: string): Observable<string> {
-    return this.http.post<string>(`${environment.backendUrl}/create-game`, { username });
+  createGame(player1Username: string): Observable<string> {
+    return this.http.post<string>(`${environment.backendUrl}/create-game`, { player1Username });
   }
 
   joinGame(gameId: number, player2Username: string): Observable<string> {

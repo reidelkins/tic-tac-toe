@@ -6,7 +6,7 @@
     </div>
     <div class="game-actions">
       <div class="username-input">
-        <input type="text" [(ngModel)]="playerUsernames[game.ID]" placeholder="Enter your username">
+        <input type="text" [(ngModel)]="playerUsernames[game.ID]" [disabled]="game.Player2ID != 0" placeholder="Enter your username">
         <button (click)="joinGame(game.ID)" [disabled]="game.Player2ID != 0">Join</button>
       </div>
     </div>

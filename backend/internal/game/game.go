@@ -25,9 +25,10 @@ type Move struct {
     Y        int   `json:"y"`
 }
 
-func NewGame(player1ID int64) *Game {
+func NewGame(player1ID int64, player1Username string) *Game {
     return &Game{
         Player1ID: player1ID,
+        Player1Username: player1Username,
         Board:     [3][3]string{},
         CurrentPlayer: "X",
         CreatedAt: time.Now(),

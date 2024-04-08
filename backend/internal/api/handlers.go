@@ -37,7 +37,7 @@ func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Initialize a new game with the player ID
-    newGame := game.NewGame(playerID)	
+    newGame := game.NewGame(playerID, playerInfo.Player1Username)	
 	
 
     gameID, err := h.DBConn.CreateGame(newGame)
@@ -110,6 +110,7 @@ func (h *Handler) JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Assign the player ID to the game
 	currentGame.Player2ID = playerID
+	currentGame.Player2Username = playerInfo.Player2Username
 
 	// Update the game in the database
 	if err := h.DBConn.UpdateGame(currentGame); err != nil {

@@ -5,3 +5,5 @@ frontend/dist/
 frontend/package-lock.json
 backend/.env
 backend/tmp/
+terraform/.terraform.lock.hcl
+terraform/.terraform/

@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
@@ -66,6 +71,26 @@ func (h *Handler) ListGamesHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func (h *Handler) GetGameHandler(w http.ResponseWriter, r *http.Request) {
+    // Extracting a game ID from the URL path    
+    gameIDStr := chi.URLParam(r, "gameId")
+    gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+    if err != nil {
+        http.Error(w, "Invalid game ID", http.StatusBadRequest)
+        return
+    }
+
+    // Fetch the game from the database
+    currentGame, err := h.DBConn.GetGame(gameID)
+    if err != nil {
+        http.Error(w, "Game not found", http.StatusNotFound)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(currentGame)
+}
+
 func (h *Handler) JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Extracting player ID from the request, adjust as necessary
 	var playerInfo struct {
@@ -119,51 +144,86 @@ func (h *Handler) JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(currentGame)
+	json.NewEncoder(w).Encode(currentGame.ID)
 }
 
+var connections = make(map[int64][]*websocket.Conn)
 
-// func PlayMoveHandler(w http.ResponseWriter, r *http.Request) {
-// 	// Extracting a game ID from the URL path
-// 	gameIDStr := r.URL.Query().Get("gameId")
-// 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-// 	if err != nil {
-// 		http.Error(w, "Invalid game ID", http.StatusBadRequest)
-// 		return
-// 	}
+var upgrader = websocket.Upgrader{
+    ReadBufferSize:  1024,
+    WriteBufferSize: 1024,
+    CheckOrigin: func(r *http.Request) bool {
+        // Get the origin of the request
+        origin := r.Header.Get("Origin")
+		
+        // Check if the origin is allowed
+        allowedOrigins := []string{
+            "http://localhost:4200",  // Example: Allow connections from localhost:4200
+			"http://127.0.0.1:4200",
+            "https://your-angular-app-url.com",  // Example: Allow connections from your Angular app URL
+        }
 
-// 	// Fetch the game from the database
-// 	currentGame, err := dbConn.GetGame(gameID)
-// 	if err != nil {
-// 		http.Error(w, "Game not found", http.StatusNotFound)
-// 		return
-// 	}
+        for _, allowedOrigin := range allowedOrigins {
+            if origin == allowedOrigin {
+                return true
+            }
+        }
 
-// 	var move game.Move
-// 	if err := json.NewDecoder(r.Body).Decode(&move); err != nil {
-// 		http.Error(w, "Invalid move", http.StatusBadRequest)
-// 		return
-// 	}
+        // If the origin is not allowed, return false
+        return false
+    },
+}
 
-// 	playerID := move.PlayerID // Assume Move struct includes PlayerID
-// 	if err := currentGame.PlayMove(playerID, move.X, move.Y); err != nil {
-// 		http.Error(w, "Failed to play move", http.StatusBadRequest)
-// 		return
-// 	}
+func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {    
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Println("Upgrade:", err)
+        return
+    }
+	
+    defer conn.Close()
 
-// 	// Update the game in the database
-// 	if err := dbConn.UpdateGame(currentGame); err != nil {
-// 		http.Error(w, "Failed to update game", http.StatusInternalServerError)
-// 		return
-// 	}
+    // Example: Assume we get the game ID from the request (adjust as needed)
+    gameID, err := strconv.ParseInt(r.URL.Query().Get("gameId"), 10, 64)
+    if err != nil {
+        log.Println("Invalid Game ID:", err)
+        return
+    }
+	
 
-// 	if currentGame.IsGameOver() {
-// 		json.NewEncoder(w).Encode(map[string]interface{}{
-// 			"result": currentGame.GetResult(),
-// 			"state":  currentGame,
-// 		})
-// 		return
-// 	}
+    // Add the connection to the list for the game
+    connections[gameID] = append(connections[gameID], conn)
 
-// 	json.NewEncoder(w).Encode(currentGame)
-// }
+    for {        
+        var msg game.Move		
+        err := conn.ReadJSON(&msg)
+        if err != nil {
+            log.Println("Read:", err)
+            break
+        }		        
+        // Process the move (e.g., update the game state)        
+        currentGame, err := h.DBConn.GetGame(gameID)
+        if err != nil {
+            log.Println("Get Game:", err)
+            continue
+        }        
+        if currentGame.PlayMove(msg.PlayerID, msg.X, msg.Y) {
+            // Save the updated game state to the database
+            err = h.DBConn.UpdateGame(currentGame)
+            if err != nil {
+                log.Println("Update Game:", err)
+                continue
+            }
+            // Broadcast the updated game state to all connected clients for this game
+            for _, c := range connections[gameID] {                
+                err = c.WriteJSON(currentGame)
+                if err != nil {
+                    log.Println("Write:", err)
+                    continue
+                }                
+            }
+        } else {
+            log.Println("Invalid move")            
+        }
+    }
+}

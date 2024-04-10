@@ -1,10 +1,9 @@
 <div class="game-board">
   <div class="header">
     <div class="players-info">
-      <p>{{ players[0] }} vs {{ players[1] || 'waiting for player 2 to join' }}</p>
+      <p>{{ gameState.Player1Username }} vs {{ gameState.Player2Username || 'waiting for player 2 to join' }}</p>
     </div>
     <button (click)="shareGame()">Share/Invite</button>
-    <p>Viewers: {{ viewersCount }}</p>
   </div>
 
   <div class="board">

@@ -21,7 +21,8 @@ export class HomeComponent {
 
   constructor(
     private gameService: GameService, 
-    private router: Router) {} // Inject Router here
+    private router: Router
+    ) {} 
 
   createGame() {
     if (!this.username) {
@@ -31,7 +32,7 @@ export class HomeComponent {
     console.log('Creating game for', this.username);
     this.gameService.createGame(this.username).subscribe({
       next: (gameId) => {
-        console.log('Game created:', gameId);
+        // Navigate to the game page
         this.router.navigate(['/game', gameId]);
       },
       error: (err) => {

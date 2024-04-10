@@ -4,6 +4,7 @@ import { Router } from '@angular/router'; // Import Router
 import { FormsModule } from '@angular/forms';
 import { Game } from '../game.model';
 import { GameService } from '../core/services/game.service';
+import { GameWebsocketService } from '../core/services/web-socket.service';
 
 @Component({
   selector: 'app-game-list',
@@ -23,7 +24,9 @@ export class GameListComponent implements OnInit {
   
   constructor(
     private gameService: GameService, 
-    private router: Router) {}
+    private router: Router,
+    private websocketService: GameWebsocketService
+    ) {}
 
   ngOnInit(): void {
     // This would be replaced by a service call to fetch active games    
@@ -48,19 +51,17 @@ export class GameListComponent implements OnInit {
     this.router.navigate(['/game', gameId]);
   }
 
-  joinGame(gameId: number) {
+  joinGame(gameId: string) {
     const username = this.playerUsernames[gameId] || '';
-    console.log(`Joining game: ${gameId} with username ${username}`);
-    console.log(`Joining game: ${gameId}`);
     if (!username) {
       alert('Username is required to join a game');
       return;
     }
     // Logic to join a game
     this.gameService.joinGame(gameId, username).subscribe({
-      next: (response) => {
-        console.log('Joined game:', response);
-        this.router.navigate(['/game', gameId]);
+      next: (gameID) => {
+        // Navigate to the game page
+        this.router.navigate(['/game', gameID]);
       },
       error: (err) => {
         console.error('Error joining game:', err);

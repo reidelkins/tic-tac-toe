@@ -64,6 +64,8 @@ func main() {
 	router.Post("/create-game", handler.CreateGameHandler)
 	router.Post("/join-game", handler.JoinGameHandler)
     router.Get("/list-active-games", handler.ListGamesHandler)
+	router.Get("/ws", handler.WebSocketHandler)
+	router.Get("/get-game/{gameId}", handler.GetGameHandler)
 	
     // router.Post("/join-game/{gameId}", joinGameHandler)
     

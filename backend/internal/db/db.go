@@ -69,7 +69,6 @@ func (db *DB) CreateGame(g *game.Game) (int64, error) {
     }
 
     g.ID = gameId
-    fmt.Println("Game ID: ", gameId)
     db.UpdateGame(g)
 
     return gameId, nil
@@ -114,11 +113,9 @@ func (db *DB) UpdateGame(g *game.Game) error {
     if err != nil {
         return err
     }
-    fmt.Println("Serialized State: ", serializedState)
     
     // Using sql.NullInt64 to handle nullable player2_id correctly
     player2IDValue := sql.NullInt64{Int64: g.Player2ID, Valid: g.Player2ID != 0}
-    fmt.Println("Player2ID Value: ", player2IDValue)
     _, err = db.Exec(
         `UPDATE games SET player1_id = $1, player2_id = $2, state = $3, over = $4 WHERE id = $5`,
         g.Player1ID,
@@ -151,6 +148,8 @@ func (db *DB) ListGames() ([]game.Game, error) {
             users u1 ON g.player1_id = u1.id
         LEFT JOIN 
             users u2 ON g.player2_id = u2.id
+        WHERE
+            g.over = false
     `)    
     if err != nil {
         return nil, err

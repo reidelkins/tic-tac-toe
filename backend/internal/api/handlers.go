@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/api/idtoken"
 
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
@@ -159,8 +161,10 @@ var upgrader = websocket.Upgrader{
         // Check if the origin is allowed
         allowedOrigins := []string{
             "http://localhost:4200",  // Example: Allow connections from localhost:4200
-			"http://127.0.0.1:4200",
-            "https://your-angular-app-url.com",  // Example: Allow connections from your Angular app URL
+			"http://127.0.0.1:4200",            
+            "http://localhost",
+            "https://c15f-70-116-143-2.ngrok-free.app",
+             
         }
 
         for _, allowedOrigin := range allowedOrigins {
@@ -226,4 +230,35 @@ func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {
             log.Println("Invalid move")            
         }
     }
+}
+
+func (h *Handler) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+    // Example: Extracting the Google ID token from the request, adjust as necessary
+    var token struct {
+        Token string `json:"token"`
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&token); err != nil {
+        http.Error(w, "Invalid request", http.StatusBadRequest)
+        return
+    }    
+    
+    // Verify the Google ID token
+    clientID := os.Getenv("GOOGLE_CLIENT_ID")    
+    payload, err := idtoken.Validate(r.Context(), token.Token, clientID)
+    if err != nil {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
+
+    // Extract relevant information from the token payload    
+    name := payload.Claims["name"].(string)    
+
+    // Example: Return the player ID or any other relevant data to the client
+    response := map[string]string{        
+        "name":  name,
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)     
 }

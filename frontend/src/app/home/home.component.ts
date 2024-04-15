@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router'; // Import Router
 import { FormsModule } from '@angular/forms';
+import { NgIf } from '@angular/common';
+import { SocialAuthService, SocialUser } from '@abacritt/angularx-social-login';
 import { LeaderboardComponent } from '../leaderboard/leaderboard.component';
 import { GameListComponent } from '../game-list/game-list.component';
 import { GameService } from '../core/services/game.service';
@@ -11,26 +13,29 @@ import { GameService } from '../core/services/game.service';
   imports: [
     FormsModule,
     GameListComponent,
-    LeaderboardComponent
+    LeaderboardComponent,
+    NgIf    
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent {
-  username: string = '';
+export class HomeComponent {  
+  user: SocialUser | null = null;
 
   constructor(
     private gameService: GameService, 
-    private router: Router
+    private router: Router,
+    private authService: SocialAuthService
     ) {} 
 
+  ngOnInit() {
+    this.authService.authState.subscribe((user: SocialUser | null) => {
+      this.user = user;
+    });
+  }
+
   createGame() {
-    if (!this.username) {
-      alert('Please enter a username');
-      return;
-    }
-    console.log('Creating game for', this.username);
-    this.gameService.createGame(this.username).subscribe({
+    this.gameService.createGame().subscribe({
       next: (gameId) => {
         // Navigate to the game page
         this.router.navigate(['/game', gameId]);

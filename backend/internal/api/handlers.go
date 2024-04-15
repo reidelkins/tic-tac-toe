@@ -4,32 +4,39 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/api/idtoken"
 
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/utils"
 )
 
 type Handler struct {
     DBConn *db.DB
 }
 
-func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
-    // Example of extracting player ID from the request, adjust as necessary
-    var playerInfo struct {
-        Player1Username string `json:"player1Username"`
-    }	
-    if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {		
-        http.Error(w, "Invalid request", http.StatusBadRequest)
+func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {    
+    tokenCookie, err := r.Cookie("csrftoken")    
+    if err != nil {
+        // Handle the case when the cookie is not found
+        http.Error(w, "Token cookie not found", http.StatusUnauthorized)
         return
     }
-
+        
+    // Verify the Google ID token
+    payload, err := utils.VerifyGoogleIDToken(r.Context(), tokenCookie.Value)
+    if err != nil {        
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
+    fmt.Println(payload)
+    // Extract relevant information from the token payload
+    email := payload.Claims["email"].(string)    
+    
     	
     // Check if the database connection is nil
 	if h.DBConn == nil {
@@ -37,18 +44,18 @@ func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}	
 
-	playerID, err := h.DBConn.CreateGetPlayer(playerInfo.Player1Username)
+	playerID, err := h.DBConn.CreateGetPlayer(email)
 	if err != nil {
 		http.Error(w, "Failed to get or create player", http.StatusInternalServerError)
 		return
 	}
-
+    
 	// Initialize a new game with the player ID
-    newGame := game.NewGame(playerID, playerInfo.Player1Username)	
+    newGame := game.NewGame(playerID, email)	
 	
 
     gameID, err := h.DBConn.CreateGame(newGame)
-	
+
     if err != nil {		
         http.Error(w, "Failed to create game", http.StatusInternalServerError)
         return
@@ -179,6 +186,22 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {    
+    // Extract the token from the request (e.g., from the query parameters or headers)    
+    tokenCookie, err := r.Cookie("token")
+    if err != nil {
+        // Handle the case when the cookie is not found
+        http.Error(w, "Token cookie not found", http.StatusUnauthorized)
+        return
+    }
+
+    // Verify the Google ID token
+    _, err = utils.VerifyGoogleIDToken(r.Context(), tokenCookie.Value)
+    if err != nil {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
+
+
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println("Upgrade:", err)
@@ -244,19 +267,19 @@ func (h *Handler) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
     }    
     
     // Verify the Google ID token
-    clientID := os.Getenv("GOOGLE_CLIENT_ID")    
-    payload, err := idtoken.Validate(r.Context(), token.Token, clientID)
+    payload, err := utils.VerifyGoogleIDToken(r.Context(), token.Token)
     if err != nil {
         http.Error(w, "Invalid token", http.StatusUnauthorized)
         return
     }
 
     // Extract relevant information from the token payload    
-    name := payload.Claims["name"].(string)    
+    email := payload.Claims["email"].(string)
 
     // Example: Return the player ID or any other relevant data to the client
     response := map[string]string{        
-        "name":  name,
+        "email":  email,
+        "token": token.Token,
     }
 
     w.Header().Set("Content-Type", "application/json")

@@ -10,6 +10,6 @@ export class LoginService {
   constructor(private http: HttpClient) {}
 
   loginWithGoogle(token: string) {
-    return this.http.post<string>(`${environment.backendUrl}/login/google`, { token });
+    return this.http.post<{ email: string, token: string }>(`${environment.backendUrl}/login/google`, { token });        
   }
 }

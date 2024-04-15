@@ -23,9 +23,11 @@ export class LoginComponent implements OnInit {
       this.user = user;
       if (user) {
         this.loginService.loginWithGoogle(user.idToken).subscribe({
-          next: (token) => {
-            // Save token to local storage
-            document.cookie = `token=${token}; path=/; secure; httpOnly`;            
+          next: (resp: { email: string, token: string }) => {
+          // Save the email and token in your component if needed
+            
+            // Save the token to local storage or cookie
+            document.cookie = `token=${resp.token}; path=/; secure; httpOnly`;
           },
           error: (err) => {
             console.error('Error logging in:', err);

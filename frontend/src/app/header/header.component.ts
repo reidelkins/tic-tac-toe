@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router'; // Import Router
 import { LoginComponent } from '../login/login.component';
 
 @Component({
@@ -11,5 +12,11 @@ import { LoginComponent } from '../login/login.component';
   styleUrl: './header.component.scss'
 })
 export class HeaderComponent {
+  constructor(    
+    private router: Router    
+    ) {} 
 
+  goHome() {
+    this.router.navigate(['/']);
+  }
 }

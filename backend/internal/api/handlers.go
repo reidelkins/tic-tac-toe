@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -20,20 +21,15 @@ type Handler struct {
 }
 
 func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {    
-    tokenCookie, err := r.Cookie("csrftoken")    
-    if err != nil {
-        // Handle the case when the cookie is not found
-        http.Error(w, "Token cookie not found", http.StatusUnauthorized)
-        return
-    }
-        
+    production, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))    
+    token, _ := utils.GetToken(w, r, production)    
+    
     // Verify the Google ID token
-    payload, err := utils.VerifyGoogleIDToken(r.Context(), tokenCookie.Value)
+    payload, err := utils.VerifyGoogleIDToken(r.Context(), token)
     if err != nil {        
         http.Error(w, "Invalid token", http.StatusUnauthorized)
         return
     }
-    fmt.Println(payload)
     // Extract relevant information from the token payload
     email := payload.Claims["email"].(string)    
     
@@ -186,36 +182,32 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {    
-    // Extract the token from the request (e.g., from the query parameters or headers)    
-    tokenCookie, err := r.Cookie("token")
-    if err != nil {
-        // Handle the case when the cookie is not found
-        http.Error(w, "Token cookie not found", http.StatusUnauthorized)
-        return
+    // Extract the token from the request (e.g., from the query parameters or headers)
+    production, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
+    if production {
+        token, _ := utils.GetToken(w, r, production)    
+
+        // Verify the Google ID token
+        _, err := utils.VerifyGoogleIDToken(r.Context(), token)
+        if err != nil {
+            http.Error(w, "Invalid token", http.StatusUnauthorized)
+            return
+        }
     }
 
-    // Verify the Google ID token
-    _, err = utils.VerifyGoogleIDToken(r.Context(), tokenCookie.Value)
+    // Example: Assume we get the game ID from the request (adjust as needed)
+    gameID, err := strconv.ParseInt(r.URL.Query().Get("gameId"), 10, 64)
     if err != nil {
-        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        http.Error(w, "Invalid Game ID", http.StatusBadRequest)
         return
     }
-
 
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println("Upgrade:", err)
         return
     }
-	
     defer conn.Close()
-
-    // Example: Assume we get the game ID from the request (adjust as needed)
-    gameID, err := strconv.ParseInt(r.URL.Query().Get("gameId"), 10, 64)
-    if err != nil {
-        log.Println("Invalid Game ID:", err)
-        return
-    }
 	
 
     // Add the connection to the list for the game
@@ -275,13 +267,30 @@ func (h *Handler) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 
     // Extract relevant information from the token payload    
     email := payload.Claims["email"].(string)
-
-    // Example: Return the player ID or any other relevant data to the client
-    response := map[string]string{        
-        "email":  email,
-        "token": token.Token,
+    
+    // Set the token as an httpOnly cookie
+    secureBool, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
+    cookie := http.Cookie{
+        Name:     "token",
+        Value:    token.Token,
+        Path:     "/",
+        Secure:   secureBool,        
+        HttpOnly: true,
+        SameSite: http.SameSiteLaxMode,
     }
+    http.SetCookie(w, &cookie)
 
+    response := map[string]string{
+            "email": email,
+            "token": token.Token,
+        }
+
+    if (secureBool) {
+        response = map[string]string{
+            "email": email,            
+        }
+    }
+    
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)     
+    json.NewEncoder(w).Encode(response)
 }

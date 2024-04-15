@@ -15,6 +15,10 @@ export class GameService {
   }
 
   createGame(): Observable<string> {
+    if (environment.production === false) {      
+      const token = localStorage.getItem('token');
+      return this.http.post<string>(`${environment.backendUrl}/create-game`, { token }, { withCredentials: true });
+    }
     return this.http.post<string>(`${environment.backendUrl}/create-game`, { }, { withCredentials: true });
   }
 

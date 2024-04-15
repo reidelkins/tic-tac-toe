@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SocialAuthService, GoogleSigninButtonModule, SocialUser } from '@abacritt/angularx-social-login';
 import { LoginService } from '../core/services/login.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -24,10 +25,11 @@ export class LoginComponent implements OnInit {
       if (user) {
         this.loginService.loginWithGoogle(user.idToken).subscribe({
           next: (resp: { email: string, token: string }) => {
-          // Save the email and token in your component if needed
             
-            // Save the token to local storage or cookie
-            document.cookie = `token=${resp.token}; path=/; secure; httpOnly`;
+            // Store token in local storage
+            if (environment.production === false) {              
+              localStorage.setItem('token', resp.token);
+            }
           },
           error: (err) => {
             console.error('Error logging in:', err);

@@ -8,3 +8,4 @@ backend/tmp/
 terraform/.terraform.lock.hcl
 terraform/.terraform/
 frontend/src/environments/environment.prod.ts
+backend/main

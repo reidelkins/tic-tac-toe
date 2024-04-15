@@ -14,8 +14,12 @@ export class GameService {
     return this.http.get<Game[]>(`${environment.backendUrl}/list-active-games`);
   }
 
-  createGame(player1Username: string): Observable<string> {
-    return this.http.post<string>(`${environment.backendUrl}/create-game`, { player1Username });
+  createGame(): Observable<string> {
+    if (environment.production === false) {      
+      const token = localStorage.getItem('token');
+      return this.http.post<string>(`${environment.backendUrl}/create-game`, { token }, { withCredentials: true });
+    }
+    return this.http.post<string>(`${environment.backendUrl}/create-game`, { }, { withCredentials: true });
   }
 
   getGame(gameId: string): Observable<Game> {
@@ -23,6 +27,6 @@ export class GameService {
   }
 
   joinGame(gameId: string, player2Username: string): Observable<string> {
-    return this.http.post<string>(`${environment.backendUrl}/join-game`, { gameId, player2Username });
+    return this.http.post<string>(`${environment.backendUrl}/join-game`, { gameId, player2Username }, { withCredentials: true });
   }
 }

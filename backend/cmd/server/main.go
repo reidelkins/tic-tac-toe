@@ -52,7 +52,7 @@ func main() {
 
     // Setting up CORS
 	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://127.0.0.1:4200"}, // or your frontend host
+		AllowedOrigins:   []string{"http://localhost:4200", "http://localhost", "https://c15f-70-116-143-2.ngrok-free.app", }, // or your frontend host
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -60,7 +60,14 @@ func main() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	})
 	router.Use(cors.Handler)
-    
+    // Print the url of the incoming request
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Infof("Request URL: %s", r.URL)
+			next.ServeHTTP(w, r)
+		})
+	})
+	router.Post("/login/google", handler.GoogleLoginHandler)
 	router.Post("/create-game", handler.CreateGameHandler)
 	router.Post("/join-game", handler.JoinGameHandler)
     router.Get("/list-active-games", handler.ListGamesHandler)

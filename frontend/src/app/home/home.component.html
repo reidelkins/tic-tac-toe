@@ -1,10 +1,12 @@
 <div class="home-container">
-  <div class="username-input">
-    <input type="text" [(ngModel)]="username" placeholder="Enter your username">
-    <button (click)="createGame()">Create Game</button>
+  <div *ngIf="!user; else loggedIn">
+    <p>Please log in to create a game.</p>
   </div>
 
-  
+  <ng-template #loggedIn>
+    <button (click)="createGame()">Create Game</button>
+  </ng-template>
+
   <app-leaderboard></app-leaderboard>
   <app-game-list></app-game-list>
 </div>

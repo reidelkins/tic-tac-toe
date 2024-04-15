@@ -1,0 +1,12 @@
+<script src="https://accounts.google.com/gsi/client" async></script>
+
+<div *ngIf="!user; else loggedIn">
+  <asl-google-signin-button type='standard' size='medium'></asl-google-signin-button>
+</div>
+
+<ng-template #loggedIn>
+  <div class="user-info">    
+    <span>{{ user?.name }}</span>
+    <button (click)="signOut()">Sign Out</button>
+  </div>
+</ng-template>

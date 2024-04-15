@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -12,22 +13,26 @@ import (
 
 	"github.com/reidelkins/kube-tic-tac-toe/internal/db"
 	"github.com/reidelkins/kube-tic-tac-toe/internal/game"
+	"github.com/reidelkins/kube-tic-tac-toe/internal/utils"
 )
 
 type Handler struct {
     DBConn *db.DB
 }
 
-func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
-    // Example of extracting player ID from the request, adjust as necessary
-    var playerInfo struct {
-        Player1Username string `json:"player1Username"`
-    }	
-    if err := json.NewDecoder(r.Body).Decode(&playerInfo); err != nil {		
-        http.Error(w, "Invalid request", http.StatusBadRequest)
+func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {    
+    production, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))    
+    token, _ := utils.GetToken(w, r, production)    
+    
+    // Verify the Google ID token
+    payload, err := utils.VerifyGoogleIDToken(r.Context(), token)
+    if err != nil {        
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
         return
     }
-
+    // Extract relevant information from the token payload
+    email := payload.Claims["email"].(string)    
+    
     	
     // Check if the database connection is nil
 	if h.DBConn == nil {
@@ -35,18 +40,18 @@ func (h *Handler) CreateGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}	
 
-	playerID, err := h.DBConn.CreateGetPlayer(playerInfo.Player1Username)
+	playerID, err := h.DBConn.CreateGetPlayer(email)
 	if err != nil {
 		http.Error(w, "Failed to get or create player", http.StatusInternalServerError)
 		return
 	}
-
+    
 	// Initialize a new game with the player ID
-    newGame := game.NewGame(playerID, playerInfo.Player1Username)	
+    newGame := game.NewGame(playerID, email)	
 	
 
     gameID, err := h.DBConn.CreateGame(newGame)
-	
+
     if err != nil {		
         http.Error(w, "Failed to create game", http.StatusInternalServerError)
         return
@@ -159,8 +164,10 @@ var upgrader = websocket.Upgrader{
         // Check if the origin is allowed
         allowedOrigins := []string{
             "http://localhost:4200",  // Example: Allow connections from localhost:4200
-			"http://127.0.0.1:4200",
-            "https://your-angular-app-url.com",  // Example: Allow connections from your Angular app URL
+			"http://127.0.0.1:4200",            
+            "http://localhost",
+            "https://c15f-70-116-143-2.ngrok-free.app",
+             
         }
 
         for _, allowedOrigin := range allowedOrigins {
@@ -175,20 +182,32 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {    
+    // Extract the token from the request (e.g., from the query parameters or headers)
+    production, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
+    if production {
+        token, _ := utils.GetToken(w, r, production)    
+
+        // Verify the Google ID token
+        _, err := utils.VerifyGoogleIDToken(r.Context(), token)
+        if err != nil {
+            http.Error(w, "Invalid token", http.StatusUnauthorized)
+            return
+        }
+    }
+
+    // Example: Assume we get the game ID from the request (adjust as needed)
+    gameID, err := strconv.ParseInt(r.URL.Query().Get("gameId"), 10, 64)
+    if err != nil {
+        http.Error(w, "Invalid Game ID", http.StatusBadRequest)
+        return
+    }
+
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
         log.Println("Upgrade:", err)
         return
     }
-	
     defer conn.Close()
-
-    // Example: Assume we get the game ID from the request (adjust as needed)
-    gameID, err := strconv.ParseInt(r.URL.Query().Get("gameId"), 10, 64)
-    if err != nil {
-        log.Println("Invalid Game ID:", err)
-        return
-    }
 	
 
     // Add the connection to the list for the game
@@ -226,4 +245,52 @@ func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {
             log.Println("Invalid move")            
         }
     }
+}
+
+func (h *Handler) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+    // Example: Extracting the Google ID token from the request, adjust as necessary
+    var token struct {
+        Token string `json:"token"`
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&token); err != nil {
+        http.Error(w, "Invalid request", http.StatusBadRequest)
+        return
+    }    
+    
+    // Verify the Google ID token
+    payload, err := utils.VerifyGoogleIDToken(r.Context(), token.Token)
+    if err != nil {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
+
+    // Extract relevant information from the token payload    
+    email := payload.Claims["email"].(string)
+    
+    // Set the token as an httpOnly cookie
+    secureBool, _ := strconv.ParseBool(os.Getenv("PRODUCTION"))
+    cookie := http.Cookie{
+        Name:     "token",
+        Value:    token.Token,
+        Path:     "/",
+        Secure:   secureBool,        
+        HttpOnly: true,
+        SameSite: http.SameSiteLaxMode,
+    }
+    http.SetCookie(w, &cookie)
+
+    response := map[string]string{
+            "email": email,
+            "token": token.Token,
+        }
+
+    if (secureBool) {
+        response = map[string]string{
+            "email": email,            
+        }
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
